@@ -30,4 +30,17 @@
     "createdAt": "2025-11-26T08:15:13.053Z"
   }
   
+{
+    "id": "1766786023765",
+    "username": "B3NZO",
+    "email": "andrej.sajben09@gmail.com",
+    "passwordHash": "$2b$10$NmYg/8xK7WwzuAPXlWI89.8DFXrOtfM0pM.sUlIuHflgEAnJGcDv6",
+    "isAdmin": true,
+    "teamId": null,
+    "status": "active",
+    "wallet": 0,
+    "transactions": [],
+    "registeredEvents": [],
+    "createdAt": "2025-12-26T21:53:43.765Z"
+  }
 ]
