@@ -1,0 +1,204 @@
+// tickets.jsw - Support Ticket Backend Module
+import wixData from 'wix-data';
+
+/**
+ * Create a support ticket
+ * @param {string} userId - User ID
+ * @param {Object} ticketData - Ticket details
+ * @returns {Promise<Object>} Created ticket
+ */
+export async function createTicket(userId, ticketData) {
+  const { subject, message } = ticketData;
+
+  if (!subject || !message) {
+    return { ok: false, message: 'Subject and message required' };
+  }
+
+  try {
+    const user = await wixData.get('Users', userId);
+
+    const newTicket = {
+      userId: userId,
+      username: user.username,
+      subject,
+      message,
+      status: 'open',
+      responses: [],
+      messages: [
+        {
+          id: Date.now().toString(),
+          userId: userId,
+          username: user.username,
+          message: message,
+          isAdmin: false,
+          timestamp: new Date()
+        }
+      ],
+      hasUnreadResponse: false,
+      createdAt: new Date()
+    };
+
+    const result = await wixData.insert('Tickets', newTicket);
+    return { ok: true, ticket: result };
+  } catch (error) {
+    console.error('Create ticket error:', error);
+    return { ok: false, message: 'Failed to create ticket' };
+  }
+}
+
+/**
+ * Get user's tickets
+ * @param {string} userId - User ID
+ * @returns {Promise<Object>} User's tickets
+ */
+export async function getUserTickets(userId) {
+  try {
+    const results = await wixData.query('Tickets')
+      .eq('userId', userId)
+      .descending('createdAt')
+      .find();
+
+    return { ok: true, tickets: results.items };
+  } catch (error) {
+    console.error('Get user tickets error:', error);
+    return { ok: false, message: 'Failed to load tickets' };
+  }
+}
+
+/**
+ * Get all tickets (admin only)
+ * @param {boolean} isAdmin - Is user admin
+ * @returns {Promise<Object>} All tickets
+ */
+export async function getAllTickets(isAdmin) {
+  if (!isAdmin) {
+    return { ok: false, message: 'Admin access required' };
+  }
+
+  try {
+    const results = await wixData.query('Tickets')
+      .descending('createdAt')
+      .find();
+
+    return { ok: true, tickets: results.items };
+  } catch (error) {
+    console.error('Get all tickets error:', error);
+    return { ok: false, message: 'Failed to load tickets' };
+  }
+}
+
+/**
+ * Respond to ticket (admin only)
+ * @param {string} ticketId - Ticket ID
+ * @param {string} adminId - Admin user ID
+ * @param {string} message - Response message
+ * @param {boolean} isAdmin - Is user admin
+ * @returns {Promise<Object>} Updated ticket
+ */
+export async function respondToTicket(ticketId, adminId, message, isAdmin) {
+  if (!isAdmin) {
+    return { ok: false, message: 'Admin access required' };
+  }
+
+  try {
+    const ticket = await wixData.get('Tickets', ticketId);
+    const admin = await wixData.get('Users', adminId);
+
+    ticket.responses.push({
+      message,
+      respondedBy: admin.username,
+      respondedAt: new Date()
+    });
+
+    ticket.messages = ticket.messages || [];
+    ticket.messages.push({
+      id: Date.now().toString(),
+      userId: adminId,
+      username: admin.username,
+      message: message,
+      isAdmin: true,
+      timestamp: new Date()
+    });
+
+    ticket.hasUnreadResponse = true;
+
+    await wixData.update('Tickets', ticket);
+
+    return { ok: true, ticket };
+  } catch (error) {
+    console.error('Respond to ticket error:', error);
+    return { ok: false, message: 'Failed to respond to ticket' };
+  }
+}
+
+/**
+ * Mark ticket as read
+ * @param {string} ticketId - Ticket ID
+ * @param {string} userId - User ID
+ * @returns {Promise<Object>} Update result
+ */
+export async function markTicketAsRead(ticketId, userId) {
+  try {
+    const ticket = await wixData.get('Tickets', ticketId);
+
+    if (ticket.userId !== userId) {
+      return { ok: false, message: 'Unauthorized' };
+    }
+
+    ticket.hasUnreadResponse = false;
+    await wixData.update('Tickets', ticket);
+
+    return { ok: true };
+  } catch (error) {
+    console.error('Mark ticket as read error:', error);
+    return { ok: false, message: 'Failed to mark ticket as read' };
+  }
+}
+
+/**
+ * Close ticket (admin only)
+ * @param {string} ticketId - Ticket ID
+ * @param {boolean} isAdmin - Is user admin
+ * @returns {Promise<Object>} Update result
+ */
+export async function closeTicket(ticketId, isAdmin) {
+  if (!isAdmin) {
+    return { ok: false, message: 'Admin access required' };
+  }
+
+  try {
+    const ticket = await wixData.get('Tickets', ticketId);
+    ticket.status = 'closed';
+    ticket.closedAt = new Date();
+    await wixData.update('Tickets', ticket);
+
+    return { ok: true };
+  } catch (error) {
+    console.error('Close ticket error:', error);
+    return { ok: false, message: 'Failed to close ticket' };
+  }
+}
+
+/**
+ * Reopen ticket (admin only)
+ * @param {string} ticketId - Ticket ID
+ * @param {boolean} isAdmin - Is user admin
+ * @returns {Promise<Object>} Update result
+ */
+export async function reopenTicket(ticketId, isAdmin) {
+  if (!isAdmin) {
+    return { ok: false, message: 'Admin access required' };
+  }
+
+  try {
+    const ticket = await wixData.get('Tickets', ticketId);
+    ticket.status = 'open';
+    ticket.closedAt = null;
+    await wixData.update('Tickets', ticket);
+
+    return { ok: true };
+  } catch (error) {
+    console.error('Reopen ticket error:', error);
+    return { ok: false, message: 'Failed to reopen ticket' };
+  }
+}
