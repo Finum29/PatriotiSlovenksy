@@ -1,0 +1,450 @@
+{
+  "collections": [
+    {
+      "name": "Users",
+      "displayName": "Users",
+      "fields": [
+        {
+          "key": "username",
+          "type": "text",
+          "required": true
+        },
+        {
+          "key": "email",
+          "type": "text",
+          "required": true
+        },
+        {
+          "key": "passwordHash",
+          "type": "text",
+          "required": true
+        },
+        {
+          "key": "isAdmin",
+          "type": "boolean",
+          "default": false
+        },
+        {
+          "key": "teamId",
+          "type": "text"
+        },
+        {
+          "key": "status",
+          "type": "text",
+          "default": "active"
+        },
+        {
+          "key": "wallet",
+          "type": "number",
+          "default": 0
+        },
+        {
+          "key": "transactions",
+          "type": "array"
+        },
+        {
+          "key": "registeredEvents",
+          "type": "array"
+        },
+        {
+          "key": "createdAt",
+          "type": "date"
+        }
+      ],
+      "permissions": {
+        "insert": "Admin",
+        "update": "Admin",
+        "remove": "Admin",
+        "read": "Anyone"
+      }
+    },
+    {
+      "name": "Events",
+      "displayName": "Events",
+      "fields": [
+        {
+          "key": "name",
+          "type": "text",
+          "required": true
+        },
+        {
+          "key": "description",
+          "type": "richText"
+        },
+        {
+          "key": "date",
+          "type": "text",
+          "required": true
+        },
+        {
+          "key": "time",
+          "type": "text",
+          "required": true
+        },
+        {
+          "key": "mode",
+          "type": "text",
+          "required": true
+        },
+        {
+          "key": "eliminationType",
+          "type": "text",
+          "default": "single"
+        },
+        {
+          "key": "iconUrl",
+          "type": "image"
+        },
+        {
+          "key": "streamUrl",
+          "type": "url"
+        },
+        {
+          "key": "lobbyUrl",
+          "type": "url"
+        },
+        {
+          "key": "teamSize",
+          "type": "number"
+        },
+        {
+          "key": "entryFee",
+          "type": "number",
+          "default": 0
+        },
+        {
+          "key": "prizePool",
+          "type": "object"
+        },
+        {
+          "key": "prizes",
+          "type": "object"
+        },
+        {
+          "key": "status",
+          "type": "text",
+          "default": "upcoming"
+        },
+        {
+          "key": "registrations",
+          "type": "array"
+        },
+        {
+          "key": "bracket",
+          "type": "array"
+        },
+        {
+          "key": "loserBracket",
+          "type": "array"
+        },
+        {
+          "key": "winner",
+          "type": "object"
+        },
+        {
+          "key": "disqualified",
+          "type": "array"
+        },
+        {
+          "key": "finishedAt",
+          "type": "date"
+        },
+        {
+          "key": "createdAt",
+          "type": "date"
+        }
+      ],
+      "permissions": {
+        "insert": "Admin",
+        "update": "Admin",
+        "remove": "Admin",
+        "read": "Anyone"
+      }
+    },
+    {
+      "name": "Teams",
+      "displayName": "Teams",
+      "fields": [
+        {
+          "key": "name",
+          "type": "text",
+          "required": true
+        },
+        {
+          "key": "description",
+          "type": "richText"
+        },
+        {
+          "key": "motto",
+          "type": "text"
+        },
+        {
+          "key": "captainId",
+          "type": "text",
+          "required": true
+        },
+        {
+          "key": "members",
+          "type": "array",
+          "required": true
+        },
+        {
+          "key": "inviteCode",
+          "type": "text",
+          "required": true
+        },
+        {
+          "key": "createdAt",
+          "type": "date"
+        }
+      ],
+      "permissions": {
+        "insert": "Member",
+        "update": "Member",
+        "remove": "Admin",
+        "read": "Anyone"
+      }
+    },
+    {
+      "name": "Tickets",
+      "displayName": "Support Tickets",
+      "fields": [
+        {
+          "key": "userId",
+          "type": "text",
+          "required": true
+        },
+        {
+          "key": "username",
+          "type": "text",
+          "required": true
+        },
+        {
+          "key": "subject",
+          "type": "text",
+          "required": true
+        },
+        {
+          "key": "message",
+          "type": "richText",
+          "required": true
+        },
+        {
+          "key": "status",
+          "type": "text",
+          "default": "open"
+        },
+        {
+          "key": "responses",
+          "type": "array"
+        },
+        {
+          "key": "messages",
+          "type": "array"
+        },
+        {
+          "key": "hasUnreadResponse",
+          "type": "boolean",
+          "default": false
+        },
+        {
+          "key": "closedAt",
+          "type": "date"
+        },
+        {
+          "key": "createdAt",
+          "type": "date"
+        }
+      ],
+      "permissions": {
+        "insert": "Member",
+        "update": "Admin",
+        "remove": "Admin",
+        "read": "Member"
+      }
+    },
+    {
+      "name": "ChatMessages",
+      "displayName": "Chat Messages",
+      "fields": [
+        {
+          "key": "userId",
+          "type": "text",
+          "required": true
+        },
+        {
+          "key": "username",
+          "type": "text",
+          "required": true
+        },
+        {
+          "key": "message",
+          "type": "richText",
+          "required": true
+        },
+        {
+          "key": "isAdmin",
+          "type": "boolean",
+          "default": false
+        },
+        {
+          "key": "room",
+          "type": "text",
+          "default": "global"
+        },
+        {
+          "key": "timestamp",
+          "type": "date"
+        }
+      ],
+      "permissions": {
+        "insert": "Member",
+        "update": "Admin",
+        "remove": "Admin",
+        "read": "Anyone"
+      }
+    },
+    {
+      "name": "TournamentChat",
+      "displayName": "Tournament Chat",
+      "fields": [
+        {
+          "key": "userId",
+          "type": "text",
+          "required": true
+        },
+        {
+          "key": "username",
+          "type": "text",
+          "required": true
+        },
+        {
+          "key": "message",
+          "type": "richText",
+          "required": true
+        },
+        {
+          "key": "isAdmin",
+          "type": "boolean",
+          "default": false
+        },
+        {
+          "key": "isCaptain",
+          "type": "boolean",
+          "default": false
+        },
+        {
+          "key": "teamId",
+          "type": "text"
+        },
+        {
+          "key": "room",
+          "type": "text",
+          "required": true
+        },
+        {
+          "key": "timestamp",
+          "type": "date"
+        }
+      ],
+      "permissions": {
+        "insert": "Member",
+        "update": "Admin",
+        "remove": "Admin",
+        "read": "Member"
+      }
+    },
+    {
+      "name": "ResetTokens",
+      "displayName": "Password Reset Tokens",
+      "fields": [
+        {
+          "key": "token",
+          "type": "text",
+          "required": true
+        },
+        {
+          "key": "userId",
+          "type": "text",
+          "required": true
+        },
+        {
+          "key": "email",
+          "type": "text",
+          "required": true
+        },
+        {
+          "key": "expiresAt",
+          "type": "date",
+          "required": true
+        },
+        {
+          "key": "createdAt",
+          "type": "date"
+        }
+      ],
+      "permissions": {
+        "insert": "Anyone",
+        "update": "Admin",
+        "remove": "Admin",
+        "read": "Admin"
+      }
+    },
+    {
+      "name": "PushSubscriptions",
+      "displayName": "Push Subscriptions",
+      "fields": [
+        {
+          "key": "userId",
+          "type": "text",
+          "required": true
+        },
+        {
+          "key": "subscription",
+          "type": "object",
+          "required": true
+        },
+        {
+          "key": "createdAt",
+          "type": "date"
+        }
+      ],
+      "permissions": {
+        "insert": "Member",
+        "update": "Admin",
+        "remove": "Admin",
+        "read": "Admin"
+      }
+    }
+  ],
+  "indexes": [
+    {
+      "collection": "Users",
+      "fields": ["username"],
+      "unique": true
+    },
+    {
+      "collection": "Users",
+      "fields": ["email"],
+      "unique": true
+    },
+    {
+      "collection": "Teams",
+      "fields": ["inviteCode"],
+      "unique": true
+    },
+    {
+      "collection": "ResetTokens",
+      "fields": ["token"],
+      "unique": true
+    },
+    {
+      "collection": "ChatMessages",
+      "fields": ["room", "timestamp"]
+    },
+    {
+      "collection": "TournamentChat",
+      "fields": ["room", "timestamp"]
+    }
+  ]
+}
