@@ -1,0 +1,333 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Buy Credits - Slovak Patriot</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+    }
+
+    .modal {
+      background: white;
+      border-radius: 20px;
+      max-width: 900px;
+      width: 100%;
+      padding: 40px;
+      box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+    }
+
+    .modal-header {
+      text-align: center;
+      margin-bottom: 40px;
+    }
+
+    .modal-header h1 {
+      font-size: 32px;
+      color: #333;
+      margin-bottom: 10px;
+    }
+
+    .modal-header p {
+      color: #666;
+      font-size: 16px;
+    }
+
+    .packages-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+      gap: 20px;
+      margin-bottom: 30px;
+    }
+
+    .package-card {
+      background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+      border-radius: 15px;
+      padding: 30px;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      border: 3px solid transparent;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .package-card:hover {
+      transform: translateY(-5px);
+      box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+    }
+
+    .package-card.selected {
+      border-color: #667eea;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+    }
+
+    .package-card.selected .package-name,
+    .package-card.selected .package-price,
+    .package-card.selected .package-credits,
+    .package-card.selected .package-bonus {
+      color: white;
+    }
+
+    .package-badge {
+      position: absolute;
+      top: 10px;
+      right: 10px;
+      background: #ffd700;
+      color: #333;
+      padding: 5px 15px;
+      border-radius: 20px;
+      font-size: 12px;
+      font-weight: bold;
+    }
+
+    .package-name {
+      font-size: 24px;
+      font-weight: bold;
+      color: #333;
+      margin-bottom: 15px;
+      text-transform: uppercase;
+    }
+
+    .package-price {
+      font-size: 36px;
+      font-weight: bold;
+      color: #667eea;
+      margin-bottom: 10px;
+    }
+
+    .package-price span {
+      font-size: 18px;
+      color: #999;
+    }
+
+    .package-credits {
+      font-size: 20px;
+      color: #555;
+      margin-bottom: 5px;
+    }
+
+    .package-bonus {
+      font-size: 16px;
+      color: #28a745;
+      font-weight: bold;
+    }
+
+    .payment-button {
+      width: 100%;
+      padding: 18px;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+      border: none;
+      border-radius: 10px;
+      font-size: 18px;
+      font-weight: bold;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      margin-top: 20px;
+    }
+
+    .payment-button:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 10px 20px rgba(102, 126, 234, 0.4);
+    }
+
+    .payment-button:disabled {
+      background: #ccc;
+      cursor: not-allowed;
+      transform: none;
+    }
+
+    .back-link {
+      display: block;
+      text-align: center;
+      margin-top: 20px;
+      color: #667eea;
+      text-decoration: none;
+      font-weight: 500;
+    }
+
+    .back-link:hover {
+      text-decoration: underline;
+    }
+
+    .loading {
+      text-align: center;
+      padding: 40px;
+    }
+
+    .spinner {
+      border: 4px solid #f3f3f3;
+      border-top: 4px solid #667eea;
+      border-radius: 50%;
+      width: 40px;
+      height: 40px;
+      animation: spin 1s linear infinite;
+      margin: 0 auto;
+    }
+
+    @keyframes spin {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
+    }
+
+    .error-message {
+      background: #ff4444;
+      color: white;
+      padding: 15px;
+      border-radius: 10px;
+      margin-bottom: 20px;
+      text-align: center;
+    }
+
+    @media (max-width: 768px) {
+      .modal {
+        padding: 20px;
+      }
+
+      .packages-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .modal-header h1 {
+        font-size: 24px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="modal">
+    <div class="modal-header">
+      <h1>💎 Buy Credits</h1>
+      <p>Choose a package to purchase tournament credits</p>
+    </div>
+
+    <div id="error-container"></div>
+    <div id="loading" class="loading" style="display: none;">
+      <div class="spinner"></div>
+      <p style="margin-top: 20px; color: #666;">Loading packages...</p>
+    </div>
+
+    <div id="packages-container" class="packages-grid"></div>
+
+    <button id="checkout-button" class="payment-button" disabled>
+      Select a Package
+    </button>
+
+    <a href="/undersites/wallet.html" class="back-link">← Back to Wallet</a>
+  </div>
+
+  <script src="https://js.stripe.com/v3/"></script>
+  <script>
+    const stripe = Stripe('pk_test_51SikjgKSYFKQ4B5mGGwqlUjUMmFDYGu1WLRHsot65pWITXKrtZFhOtgFDdRYYltxU4PzFGk0DmOgBS2O06lefwzR00njAQNpPv');
+    let selectedPackage = null;
+
+    // Load packages
+    async function loadPackages() {
+      const loading = document.getElementById('loading');
+      const container = document.getElementById('packages-container');
+      const errorContainer = document.getElementById('error-container');
+
+      loading.style.display = 'block';
+
+      try {
+        const response = await fetch('/api/payment/packages');
+        const data = await response.json();
+
+        if (!data.ok) {
+          throw new Error(data.message || 'Failed to load packages');
+        }
+
+        loading.style.display = 'none';
+        renderPackages(data.packages);
+      } catch (error) {
+        loading.style.display = 'none';
+        errorContainer.innerHTML = `
+          <div class="error-message">
+            Failed to load credit packages. Please try again later.
+          </div>
+        `;
+      }
+    }
+
+    function renderPackages(packages) {
+      const container = document.getElementById('packages-container');
+      
+      container.innerHTML = packages.map(pkg => `
+        <div class="package-card" data-package-id="${pkg.id}" onclick="selectPackage('${pkg.id}')">
+          ${pkg.bonus > 0 ? `<div class="package-badge">+${pkg.bonus} BONUS</div>` : ''}
+          <div class="package-name">${pkg.id}</div>
+          <div class="package-price">$${pkg.price}</div>
+          <div class="package-credits">${pkg.credits} Credits</div>
+          ${pkg.bonus > 0 ? `<div class="package-bonus">+ ${pkg.bonus} Bonus Credits</div>` : ''}
+        </div>
+      `).join('');
+    }
+
+    function selectPackage(packageId) {
+      selectedPackage = packageId;
+      
+      // Update UI
+      document.querySelectorAll('.package-card').forEach(card => {
+        card.classList.remove('selected');
+      });
+      document.querySelector(`[data-package-id="${packageId}"]`).classList.add('selected');
+
+      // Enable checkout button
+      const button = document.getElementById('checkout-button');
+      button.disabled = false;
+      button.textContent = 'Proceed to Checkout';
+    }
+
+    // Checkout
+    document.getElementById('checkout-button').addEventListener('click', async () => {
+      if (!selectedPackage) return;
+
+      const button = document.getElementById('checkout-button');
+      button.disabled = true;
+      button.textContent = 'Processing...';
+
+      try {
+        const response = await fetch('/api/payment/create-checkout', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ packageId: selectedPackage })
+        });
+
+        const data = await response.json();
+
+        if (!data.ok) {
+          throw new Error(data.message || 'Failed to create checkout session');
+        }
+
+        // Redirect to Stripe Checkout
+        const result = await stripe.redirectToCheckout({ sessionId: data.sessionId });
+
+        if (result.error) {
+          throw new Error(result.error.message);
+        }
+      } catch (error) {
+        alert('Payment failed: ' + error.message);
+        button.disabled = false;
+        button.textContent = 'Proceed to Checkout';
+      }
+    });
+
+    // Initialize
+    loadPackages();
+  </script>
+</body>
+</html>
