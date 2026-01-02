@@ -1,0 +1,380 @@
+// users.jsw - User Management Backend Module
+import wixData from 'wix-data';
+import { hash, compare } from 'wix-users-backend';
+import wixSecretsBackend from 'wix-secrets-backend';
+
+/**
+ * Register a new user
+ * @param {Object} userData - User registration data
+ * @returns {Promise<Object>} Registration result
+ */
+export async function registerUser(userData) {
+  const { username, email, password, confirmPassword } = userData;
+
+  // Validation
+  if (!username || !email || !password || !confirmPassword) {
+    return { ok: false, message: 'All fields are required' };
+  }
+
+  if (password !== confirmPassword) {
+    return { ok: false, message: 'Passwords do not match' };
+  }
+
+  if (password.length < 4) {
+    return { ok: false, message: 'Password must be at least 4 characters' };
+  }
+
+  try {
+    // Check if username exists
+    const existingUsername = await wixData.query('Users')
+      .eq('username', username)
+      .find();
+
+    if (existingUsername.items.length > 0) {
+      return { ok: false, message: 'Username already exists' };
+    }
+
+    // Check if email exists
+    const existingEmail = await wixData.query('Users')
+      .eq('email', email)
+      .find();
+
+    if (existingEmail.items.length > 0) {
+      return { ok: false, message: 'Email already exists' };
+    }
+
+    // Hash password
+    const passwordHash = await hash(password);
+
+    // Create new user
+    const newUser = {
+      username,
+      email,
+      passwordHash,
+      isAdmin: false,
+      teamId: null,
+      status: 'active',
+      wallet: 0,
+      transactions: [],
+      registeredEvents: [],
+      createdAt: new Date()
+    };
+
+    await wixData.insert('Users', newUser);
+
+    return { ok: true, message: 'Registration successful' };
+  } catch (error) {
+    console.error('Registration error:', error);
+    return { ok: false, message: 'Registration failed. Please try again.' };
+  }
+}
+
+/**
+ * Login user
+ * @param {string} username - Username or email
+ * @param {string} password - Password
+ * @returns {Promise<Object>} Login result with user data
+ */
+export async function loginUser(username, password) {
+  if (!username || !password) {
+    return { ok: false, message: 'Username and password required' };
+  }
+
+  try {
+    // Find user by username or email
+    const results = await wixData.query('Users')
+      .or(
+        wixData.query('Users').eq('username', username),
+        wixData.query('Users').eq('email', username)
+      )
+      .find();
+
+    if (results.items.length === 0) {
+      return { ok: false, message: 'User not found' };
+    }
+
+    const user = results.items[0];
+
+    // Check if banned
+    if (user.status === 'banned') {
+      return { ok: false, message: 'Your account has been banned', banned: true };
+    }
+
+    // Verify password
+    const validPassword = await compare(password, user.passwordHash);
+    if (!validPassword) {
+      return { ok: false, message: 'Invalid password' };
+    }
+
+    // Return user data (excluding password hash)
+    return {
+      ok: true,
+      message: 'Login successful',
+      user: {
+        id: user._id,
+        username: user.username,
+        email: user.email,
+        isAdmin: user.isAdmin,
+        teamId: user.teamId,
+        status: user.status,
+        wallet: user.wallet || 0
+      }
+    };
+  } catch (error) {
+    console.error('Login error:', error);
+    return { ok: false, message: 'Login failed. Please try again.' };
+  }
+}
+
+/**
+ * Get user by ID
+ * @param {string} userId - User ID
+ * @returns {Promise<Object>} User data
+ */
+export async function getUserById(userId) {
+  try {
+    const user = await wixData.get('Users', userId);
+    return {
+      ok: true,
+      user: {
+        id: user._id,
+        username: user.username,
+        email: user.email,
+        isAdmin: user.isAdmin,
+        teamId: user.teamId,
+        status: user.status,
+        wallet: user.wallet || 0
+      }
+    };
+  } catch (error) {
+    console.error('Get user error:', error);
+    return { ok: false, message: 'User not found' };
+  }
+}
+
+/**
+ * Get wallet balance
+ * @param {string} userId - User ID
+ * @returns {Promise<Object>} Wallet balance
+ */
+export async function getWalletBalance(userId) {
+  try {
+    const user = await wixData.get('Users', userId);
+    return { ok: true, balance: user.wallet || 0 };
+  } catch (error) {
+    console.error('Get wallet error:', error);
+    return { ok: false, message: 'Failed to get wallet balance' };
+  }
+}
+
+/**
+ * Purchase credits
+ * @param {string} userId - User ID
+ * @param {Object} purchaseData - Purchase details
+ * @returns {Promise<Object>} Purchase result
+ */
+export async function purchaseCredits(userId, purchaseData) {
+  const { amount, price, paymentMethod } = purchaseData;
+
+  if (!amount || !price || !paymentMethod) {
+    return { ok: false, message: 'Missing required fields' };
+  }
+
+  try {
+    const user = await wixData.get('Users', userId);
+
+    // Calculate bonus credits
+    let bonusCredits = 0;
+    if (amount >= 250) bonusCredits = Math.floor(amount * 0.1);
+    if (amount >= 500) bonusCredits = Math.floor(amount * 0.2);
+    if (amount >= 1000) bonusCredits = Math.floor(amount * 0.25);
+    if (amount >= 2500) bonusCredits = Math.floor(amount * 0.3);
+    if (amount >= 5000) bonusCredits = Math.floor(amount * 0.4);
+
+    const totalCredits = amount + bonusCredits;
+    user.wallet = (user.wallet || 0) + totalCredits;
+
+    // Add transaction
+    user.transactions = user.transactions || [];
+    user.transactions.push({
+      type: 'Purchase',
+      amount: totalCredits,
+      price: price,
+      paymentMethod: paymentMethod,
+      timestamp: new Date()
+    });
+
+    await wixData.update('Users', user);
+
+    return {
+      ok: true,
+      message: `Successfully purchased ${amount} credits${bonusCredits > 0 ? ` + ${bonusCredits} bonus` : ''}!`,
+      newBalance: user.wallet
+    };
+  } catch (error) {
+    console.error('Purchase error:', error);
+    return { ok: false, message: 'Purchase failed. Please try again.' };
+  }
+}
+
+/**
+ * Get transaction history
+ * @param {string} userId - User ID
+ * @returns {Promise<Object>} Transaction history
+ */
+export async function getTransactionHistory(userId) {
+  try {
+    const user = await wixData.get('Users', userId);
+    return { ok: true, transactions: user.transactions || [] };
+  } catch (error) {
+    console.error('Get transactions error:', error);
+    return { ok: false, message: 'Failed to get transaction history' };
+  }
+}
+
+/**
+ * Update user wallet (for internal use)
+ * @param {string} userId - User ID
+ * @param {number} amount - Amount to add/subtract
+ * @param {string} transactionType - Transaction description
+ * @returns {Promise<Object>} Update result
+ */
+export async function updateWallet(userId, amount, transactionType) {
+  try {
+    const user = await wixData.get('Users', userId);
+    user.wallet = (user.wallet || 0) + amount;
+
+    user.transactions = user.transactions || [];
+    user.transactions.push({
+      type: transactionType,
+      amount: amount,
+      timestamp: new Date()
+    });
+
+    await wixData.update('Users', user);
+
+    return { ok: true, newBalance: user.wallet };
+  } catch (error) {
+    console.error('Update wallet error:', error);
+    return { ok: false, message: 'Failed to update wallet' };
+  }
+}
+
+/**
+ * Request password reset
+ * @param {string} email - User email
+ * @returns {Promise<Object>} Reset request result
+ */
+export async function requestPasswordReset(email) {
+  if (!email) {
+    return { ok: false, message: 'Email required' };
+  }
+
+  try {
+    const results = await wixData.query('Users')
+      .eq('email', email)
+      .find();
+
+    if (results.items.length === 0) {
+      // Don't reveal if email exists
+      return { ok: true, message: 'If the email exists, a reset link has been sent' };
+    }
+
+    const user = results.items[0];
+
+    // Generate token
+    const token = Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15);
+
+    // Store token
+    await wixData.insert('ResetTokens', {
+      token,
+      userId: user._id,
+      email: user.email,
+      expiresAt: new Date(Date.now() + 3600000), // 1 hour
+      createdAt: new Date()
+    });
+
+    // TODO: Send email with reset link
+    console.log('Reset token:', token);
+
+    return { ok: true, message: 'If the email exists, a reset link has been sent' };
+  } catch (error) {
+    console.error('Password reset request error:', error);
+    return { ok: false, message: 'Failed to process reset request' };
+  }
+}
+
+/**
+ * Verify reset token
+ * @param {string} token - Reset token
+ * @returns {Promise<Object>} Verification result
+ */
+export async function verifyResetToken(token) {
+  try {
+    const results = await wixData.query('ResetTokens')
+      .eq('token', token)
+      .find();
+
+    if (results.items.length === 0) {
+      return { ok: false, message: 'Invalid token' };
+    }
+
+    const resetToken = results.items[0];
+    const now = new Date();
+
+    if (now > resetToken.expiresAt) {
+      return { ok: false, message: 'Token expired' };
+    }
+
+    return { ok: true, email: resetToken.email };
+  } catch (error) {
+    console.error('Verify token error:', error);
+    return { ok: false, message: 'Failed to verify token' };
+  }
+}
+
+/**
+ * Reset password
+ * @param {string} token - Reset token
+ * @param {string} newPassword - New password
+ * @returns {Promise<Object>} Reset result
+ */
+export async function resetPassword(token, newPassword) {
+  if (!token || !newPassword) {
+    return { ok: false, message: 'Token and new password required' };
+  }
+
+  if (newPassword.length < 4) {
+    return { ok: false, message: 'Password must be at least 4 characters' };
+  }
+
+  try {
+    const tokenResults = await wixData.query('ResetTokens')
+      .eq('token', token)
+      .find();
+
+    if (tokenResults.items.length === 0) {
+      return { ok: false, message: 'Invalid token' };
+    }
+
+    const resetToken = tokenResults.items[0];
+    const now = new Date();
+
+    if (now > resetToken.expiresAt) {
+      return { ok: false, message: 'Token expired' };
+    }
+
+    // Update user password
+    const user = await wixData.get('Users', resetToken.userId);
+    user.passwordHash = await hash(newPassword);
+    await wixData.update('Users', user);
+
+    // Remove used token
+    await wixData.remove('ResetTokens', resetToken._id);
+
+    return { ok: true, message: 'Password reset successful' };
+  } catch (error) {
+    console.error('Reset password error:', error);
+    return { ok: false, message: 'Failed to reset password' };
+  }
+}
